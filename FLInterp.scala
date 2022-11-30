@@ -132,7 +132,7 @@ object FLInterp {
             }
             case _ => throw InterpException("conditionals have to evaluate to a numV")
           }
-          } // ... need code ...   
+        } // end of If
         case Let(x,b,e) => {
           if (useHeap) {
             val cb = interpE(env, b)
@@ -149,7 +149,7 @@ object FLInterp {
             stack.pop()
             ev
           }
-          } // ... need code ...   
+        } // end of Let
         case LetRec(x,b,e) => {
           if (useHeap) {
             val addy:Addr = heap.allocate(1)
@@ -176,35 +176,65 @@ object FLInterp {
               case _ => throw InterpException("second terms gotta be a closure...")
             }
           }
-          } // ... need code ...   
+        } // end of LetRec
         case Fun(x,b) => {
-          // took out the part where I copied the env, don't think I need.
           ClosureV(x, b, env)
-        } // ... need code ...    
+        } // end of Fun
         case Apply(f,e) => {
           interpE(env, f) match {
             case ClosureV(x, b, cl_env) => {
-              val ve = interpE(env, e)
-              if (useHeap) {
-                val addy = heap.allocate(1);
-                set(addy, ve)
-                val ne = cl_env + (x -> addy)
-                interpE(ne, b)
-              } else {
-                val addy = stack.push()
-                set(addy, ve)
-                val ne = cl_env + (x -> addy)
-                val vb = interpE(ne, b)
-                stack.pop
-                vb
+
+              if (callByName) {
+                def substitute(e:Expr, x:String, y:Expr):Expr = {
+                  e match {
+                    case Num(n) => e
+                    case Var(x) => y
+                    case Add(l,r) => Add(substitute(l,x,y), substitute(r,x,y))
+                    case Sub(l,r) => Sub(substitute(l,x,y), substitute(r,x,y))
+                    case Mul(l,r) => Mul(substitute(l,x,y), substitute(r,x,y))
+                    case Div(l,r) => Div(substitute(l,x,y), substitute(r,x,y))
+                    case Rem(l,r) => Rem(substitute(l,x,y), substitute(r,x,y))
+                    case Lt(l,r) => Lt(substitute(l,x,y), substitute(r,x,y))
+                    case Gt(l,r) => Gt(substitute(l,x,y), substitute(r,x,y))
+                    case Eq(l,r) => Eq(substitute(l,x,y), substitute(r,x,y))
+                    case If(c,t,f) => If(substitute(c,x,y), substitute(t,x,y), substitute(f,x,y))
+                    case Let(w,b,f) => if (w == x) e else Let(w, substitute(b,x,y), substitute(f,x,y))
+                    case LetRec(w,b,f) => if (w == x) e else LetRec(w, substitute(b,x,y), substitute(f,x,y))
+                    case Fun(w,b) => if (w == x) e else Fun(w, substitute(b,x,y))
+                    case Apply(f, b) => { 
+                      Apply(f, substitute(b,x,y))
+                    }
+                  }
+                  //"""(@ (@ (fun x (fun y (+ x y))) 2) 3)""" what I'm trying to get to work.
+                } // end of substitute rec function...
+                val vs = substitute(b, x, e)
+                if (debug > 0) {
+                  println("CBN: " + Apply(f,e) + " => " + vs)
+                }
+                interpE(cl_env, vs)
+              } // end of if call by name 
+              else {
+                val ve = interpE(env, e)
+                if (useHeap) {
+                  val addy = heap.allocate(1);
+                  set(addy, ve)
+                  val ne = cl_env + (x -> addy)
+                  interpE(ne, b)
+                } else {
+                  val addy = stack.push()
+                  set(addy, ve)
+                  val ne = cl_env + (x -> addy)
+                  val vb = interpE(ne, b)
+                  stack.pop
+                  vb
+                }
               }
             }
             case _ => throw InterpException("can't apply to a non closure.")
           }
-          
-          } // ... need code ...   
-      }
-    }
+        } // end of Apply, i think?
+      } // end of e match
+    } // end of interpE
 
     // process the top-level expression
     val v = interpE(env,p)

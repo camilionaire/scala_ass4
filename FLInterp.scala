@@ -143,8 +143,29 @@ object FLInterp {
           ev
           } // ... need code ...   
         // case LetRec(x,b,e) => // ... need code ...   
-        // case Fun(x,b) => // ... need code ...    
-        // case Apply(f,e) => // ... need code ...   
+        // NOT CORRECT FUN STUFF...
+        // JUST RETURNS
+        case Fun(x,b) => {
+          // val addy:Addr = stack.push()
+          // not sure if I need this part?
+          val curr = env 
+          ClosureV(x, b, curr)
+        } // ... need code ...    
+        case Apply(f,e) => {
+          interpE(env, f) match {
+            case ClosureV(x, b, cl_env) => {
+              val ve = interpE(env, e)
+              val addy:Addr = stack.push()
+              set(addy, ve)
+              val ne = cl_env + (x -> addy)
+              val vb = interpE(ne, b)
+              stack.pop
+              vb
+            }
+            case _ => throw InterpException("can't apply to a non closure.")
+          }
+          
+          } // ... need code ...   
       }
     }
 

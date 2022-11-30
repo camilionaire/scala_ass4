@@ -14,7 +14,7 @@ class TestFLI extends FunSuite {
   test("test let" ) {
     assertResult(3) { FLInterp("(let x 1 (let y 2 (+ x y)))") }
     assertResult(4) { FLInterp("(let x 1 (let x 2 (+ x x)))") }
-    // intercept[InterpException] { FLInterp("(let* x 1 (+ x 1))") }
+    intercept[InterpException] { FLInterp("(let* x 1 (+ x 1))") }
   }
 
   test("simple functions" ) {

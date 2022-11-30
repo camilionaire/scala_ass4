@@ -134,22 +134,48 @@ object FLInterp {
           }
           } // ... need code ...   
         case Let(x,b,e) => {
-          val cb = interpE(env, b)
-          val addy:Addr = stack.push()
-          set(addy, cb)
-          val ne = env + (x -> addy)
-          val ev = interpE(ne, e)
-          stack.pop()
-          ev
+          if (useHeap) {
+            val cb = interpE(env, b)
+            val addy:Addr = heap.allocate(1)
+            set(addy, cb)
+            val ne = env + (x -> addy)
+            interpE(ne, e)
+          } else {
+            val cb = interpE(env, b)
+            val addy:Addr = stack.push()
+            set(addy, cb)
+            val ne = env + (x -> addy)
+            val ev = interpE(ne, e)
+            stack.pop()
+            ev
+          }
           } // ... need code ...   
         case LetRec(x,b,e) => {
-          val addy:Addr = stack.push()
-          val ne = env + (x -> addy)
-          val vb = interpE(ne, b)
-          set(addy, vb)
-          val ve = interpE(ne, e)
-          stack.pop()
-          ve
+          if (useHeap) {
+            val addy:Addr = heap.allocate(1)
+            val ne = env + (x -> addy)
+            val vb = interpE(ne, b)
+            vb match {
+              case ClosureV(what,ev,er) => {
+                set(addy, vb)
+                interpE(ne, e)
+              }
+              case _ => throw InterpException("second terms gotta be a closure...")
+            }
+          } else {
+            val addy:Addr = stack.push()
+            val ne = env + (x -> addy)
+            val vb = interpE(ne, b)
+            vb match {
+              case ClosureV(what,ev,er) => {
+                set(addy, vb)
+                val ve = interpE(ne, e)
+                stack.pop()
+                ve
+              }
+              case _ => throw InterpException("second terms gotta be a closure...")
+            }
+          }
           } // ... need code ...   
         case Fun(x,b) => {
           // took out the part where I copied the env, don't think I need.
@@ -159,12 +185,19 @@ object FLInterp {
           interpE(env, f) match {
             case ClosureV(x, b, cl_env) => {
               val ve = interpE(env, e)
-              val addy:Addr = stack.push()
-              set(addy, ve)
-              val ne = cl_env + (x -> addy)
-              val vb = interpE(ne, b)
-              stack.pop
-              vb
+              if (useHeap) {
+                val addy = heap.allocate(1);
+                set(addy, ve)
+                val ne = cl_env + (x -> addy)
+                interpE(ne, b)
+              } else {
+                val addy = stack.push()
+                set(addy, ve)
+                val ne = cl_env + (x -> addy)
+                val vb = interpE(ne, b)
+                stack.pop
+                vb
+              }
             }
             case _ => throw InterpException("can't apply to a non closure.")
           }

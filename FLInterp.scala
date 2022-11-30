@@ -142,14 +142,18 @@ object FLInterp {
           stack.pop()
           ev
           } // ... need code ...   
-        // case LetRec(x,b,e) => // ... need code ...   
-        // NOT CORRECT FUN STUFF...
-        // JUST RETURNS
+        case LetRec(x,b,e) => {
+          val addy:Addr = stack.push()
+          val ne = env + (x -> addy)
+          val vb = interpE(ne, b)
+          set(addy, vb)
+          val ve = interpE(ne, e)
+          stack.pop()
+          ve
+          } // ... need code ...   
         case Fun(x,b) => {
-          // val addy:Addr = stack.push()
-          // not sure if I need this part?
-          val curr = env 
-          ClosureV(x, b, curr)
+          // took out the part where I copied the env, don't think I need.
+          ClosureV(x, b, env)
         } // ... need code ...    
         case Apply(f,e) => {
           interpE(env, f) match {

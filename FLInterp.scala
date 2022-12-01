@@ -180,39 +180,43 @@ object FLInterp {
         case Fun(x,b) => {
           ClosureV(x, b, env)
         } // end of Fun
+
+
+
         case Apply(f,e) => {
           interpE(env, f) match {
             case ClosureV(x, b, cl_env) => {
 
               if (callByName) {
-                def substitute(e:Expr, x:String, y:Expr):Expr = {
+
+                def substitute(e:Expr, repX:String, y:Expr):Expr = {
                   e match {
                     case Num(n) => e
-                    case Var(x) => y
-                    case Add(l,r) => Add(substitute(l,x,y), substitute(r,x,y))
-                    case Sub(l,r) => Sub(substitute(l,x,y), substitute(r,x,y))
-                    case Mul(l,r) => Mul(substitute(l,x,y), substitute(r,x,y))
-                    case Div(l,r) => Div(substitute(l,x,y), substitute(r,x,y))
-                    case Rem(l,r) => Rem(substitute(l,x,y), substitute(r,x,y))
-                    case Lt(l,r) => Lt(substitute(l,x,y), substitute(r,x,y))
-                    case Gt(l,r) => Gt(substitute(l,x,y), substitute(r,x,y))
-                    case Eq(l,r) => Eq(substitute(l,x,y), substitute(r,x,y))
-                    case If(c,t,f) => If(substitute(c,x,y), substitute(t,x,y), substitute(f,x,y))
-                    case Let(w,b,f) => if (w == x) e else Let(w, substitute(b,x,y), substitute(f,x,y))
-                    case LetRec(w,b,f) => if (w == x) e else LetRec(w, substitute(b,x,y), substitute(f,x,y))
-                    case Fun(w,b) => if (w == x) e else Fun(w, substitute(b,x,y))
-                    case Apply(f, b) => { 
-                      Apply(f, substitute(b,x,y))
-                    }
+                    case Var(x) => if (x == repX) y else e
+                    case Add(l,r) => Add(substitute(l,repX,y), substitute(r,repX,y))
+                    case Sub(l,r) => Sub(substitute(l,repX,y), substitute(r,repX,y))
+                    case Mul(l,r) => Mul(substitute(l,repX,y), substitute(r,repX,y))
+                    case Div(l,r) => Div(substitute(l,repX,y), substitute(r,repX,y))
+                    case Rem(l,r) => Rem(substitute(l,repX,y), substitute(r,repX,y))
+                    case Lt(l,r) => Lt(substitute(l,repX,y), substitute(r,repX,y))
+                    case Gt(l,r) => Gt(substitute(l,repX,y), substitute(r,repX,y))
+                    case Eq(l,r) => Eq(substitute(l,repX,y), substitute(r,repX,y))
+                    case If(c,t,f) => If(substitute(c,repX,y), substitute(t,repX,y), substitute(f,repX,y))
+                    case Let(w,b,f) => if (w == repX) e else Let(w, substitute(b,repX,y), substitute(f,repX,y))
+                    case LetRec(w,b,f) => if (w == repX) e else LetRec(w, substitute(b,repX,y), substitute(f,repX,y))
+                    case Fun(w,b) => if (w == repX) e else Fun(w, substitute(b,repX,y))
+                    case Apply(f, b) => Apply(f, substitute(b,repX,y))                      
                   }
                   //"""(@ (@ (fun x (fun y (+ x y))) 2) 3)""" what I'm trying to get to work.
                 } // end of substitute rec function...
-                val vs = substitute(b, x, e)
-                if (debug > 0) {
-                  println("CBN: " + Apply(f,e) + " => " + vs)
-                }
+                val vs:Expr = substitute(b, x, e)
+                // for debugging that I didn't really need
+                // if (debug > 0) {
+                //   println("CBN: " + Apply(f,e) + " => " + vs)
+                // }
                 interpE(cl_env, vs)
               } // end of if call by name 
+
               else {
                 val ve = interpE(env, e)
                 if (useHeap) {

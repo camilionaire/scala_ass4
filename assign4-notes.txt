@@ -1,0 +1,30 @@
+Name: Camilo Schaser-Hughes
+Date: November 29, 2022
+Class: CS 558 Programming Languages
+Prof. Jingke Li
+
+Assignment #4
+
+This assignment went okay.  Easier that the first one or two.  More
+difficult than the third though.
+
+At this point.  I have yet to get the very last bit to work.  The
+callByName flag I haven't quite figured out.  Everything works, 
+but the first-class functions examples 1-4 breaks after I hook
+up the call by name substitution function.
+
+So, after much head banging, I was able to get everything to work.
+My logic of the actual substitution function was correct however
+I assumed that the problem was in my logic on the recursive call
+of the Apply function, when really the problem was in my understanding
+of bound vs unbound variables within a case within a match.
+I was substituting the expression y within my recursive function for
+every variable that I came across, not just the ones which matched the 
+x string.
+
+Aside from that hickup, it went well.  I wish I had timed it out a little
+better.  Started on all the cases from prior exercises for part 1 last
+week, that was easy.  Got to the harder part, and didn't get back to
+it until a couple days ago.  Powered through parts 1-3 until hickup.
+
+Overall fun, but I got a little lost at the end.

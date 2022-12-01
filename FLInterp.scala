@@ -8,6 +8,9 @@
 //
 // Usage: linux> scala FLInterp <source file>
 //
+
+// Edited by:Camilo Schaser-Hughes
+// Date November 30, 2022
 import FuncLang._
 
 object FLInterp {
@@ -120,6 +123,7 @@ object FLInterp {
         case Lt(l,r) => interpBop(env,l,r,(lv,rv)=> if (lv<rv) 1 else 0) 
         case Gt(l,r) => interpBop(env,l,r,(lv,rv)=> if (lv>rv) 1 else 0) 
         case Eq(l,r) => interpBop(env,l,r,(lv,rv)=> if (lv==rv) 1 else 0)
+        // just the same old if statement
         case If(c,t,e) => {
           val cv = interpE(env, c)
           cv match {
@@ -133,7 +137,9 @@ object FLInterp {
             case _ => throw InterpException("conditionals have to evaluate to a numV")
           }
         } // end of If
+        // same of let statement
         case Let(x,b,e) => {
+          // does same thing except doesn't pop for heap
           if (useHeap) {
             val cb = interpE(env, b)
             val addy:Addr = heap.allocate(1)
@@ -151,6 +157,7 @@ object FLInterp {
           }
         } // end of Let
         case LetRec(x,b,e) => {
+          // does the same things except don't pop
           if (useHeap) {
             val addy:Addr = heap.allocate(1)
             val ne = env + (x -> addy)
@@ -177,6 +184,7 @@ object FLInterp {
             }
           }
         } // end of LetRec
+        // just returns a closure, I think that's all it needs
         case Fun(x,b) => {
           ClosureV(x, b, env)
         } // end of Fun
@@ -185,10 +193,11 @@ object FLInterp {
 
         case Apply(f,e) => {
           interpE(env, f) match {
+            // first we make sure it's a closure
             case ClosureV(x, b, cl_env) => {
-
+              // then if it's call by name
               if (callByName) {
-
+                // super long recursive helper function
                 def substitute(e:Expr, repX:String, y:Expr):Expr = {
                   e match {
                     case Num(n) => e
@@ -207,17 +216,14 @@ object FLInterp {
                     case Fun(w,b) => if (w == repX) e else Fun(w, substitute(b,repX,y))
                     case Apply(f, b) => Apply(f, substitute(b,repX,y))                      
                   }
-                  //"""(@ (@ (fun x (fun y (+ x y))) 2) 3)""" what I'm trying to get to work.
                 } // end of substitute rec function...
+                // subsittute and then interpret
                 val vs:Expr = substitute(b, x, e)
-                // for debugging that I didn't really need
-                // if (debug > 0) {
-                //   println("CBN: " + Apply(f,e) + " => " + vs)
-                // }
                 interpE(cl_env, vs)
               } // end of if call by name 
 
-              else {
+              else { // if it's not a call by name:
+              // interp and then do the same thing stack-pop heap no
                 val ve = interpE(env, e)
                 if (useHeap) {
                   val addy = heap.allocate(1);
